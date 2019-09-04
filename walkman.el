@@ -30,20 +30,24 @@ ARGS is the curl args."
         (headers nil))
     (save-excursion
       (goto-char (point-min))
-      (re-search-forward
-       (concat "HTTP/[0-9]\\.[0-9] \\([0-9]\\{3\\}\\) \\([A-Z ]+\\)\n" ;; (1) code (2) status
-               "\\([^\000]*?\n\\)+\n" ;; (3) headers
-               "\\(.*\n\\)+")) ;; (4) body
+      (re-search-forward "^HTTP/[0-9]\\.[0-9] \\([0-9]\\{3\\}\\) \\([A-Z ]+\\)")
       (setq code (string-to-number (match-string 1)))
       (setq status (match-string 2))
-      (setq headers (match-string 3)))
+      (setq headers (walkman--parse-headers)))
     (re-search-backward "\n")
     (forward-char 2)
-    ;; (unless walkman-keep-headers
-    ;;   (delete-region (point-min) (point)))
+    (unless walkman-keep-headers
+      (delete-region (point-min) (point)))
     (list (cons :code code) (cons :status status)
           (cons :headers headers)
           (cons :body (buffer-substring-no-properties (point) (point-max))))))
+
+(defun walkman--parse-headers ()
+  "Parse headers into list."
+  (let ((headers '()))
+    (while (re-search-forward "^\\(.*\\): \\(.*\\)$" (point-max) t)
+      (push (cons (match-string 1) (match-string 2)) headers))
+    headers))
 
 (defun walkman--to-args (args)
   "Parse into curl args.
@@ -156,11 +160,11 @@ NO-CALLBACKS disables callbacks."
          (callbacks (assoc :callbacks req))
          (res (walkman--exec (walkman--to-args req)))
          (code (cdr (assoc :code res)))
+         (headers (cdr (assoc :headers res)))
          (body (cdr (assoc :body res))))
-    (message "%s" res)
     (unless no-callbacks
       (dolist (fct (cdr (assoc :callbacks req)))
-        (funcall (car (read-from-string fct)) code body)))))
+        (funcall (car (read-from-string fct)) code headers body)))))
 
 (define-transient-command walkman-transient ()
   "Walkman Menu"

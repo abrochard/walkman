@@ -46,12 +46,12 @@
   #+end_src
   1. First callback
      #+begin_src emacs-lisp
-       (lambda (status body)
-         (message "status %s, body %s" status body))
+       (lambda (status headers body)
+         (message "status %s, headers %s, body %s" status headers body))
      #+end_src
   2. Second callback
      #+begin_src emacs-lisp
-       (lambda (status body)
+       (lambda (status headers body)
          (pp (assoc 'url (json-read-from-string body))))
      #+end_src
 
