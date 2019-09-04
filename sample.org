@@ -1,0 +1,83 @@
+* Notes
+  #+begin_src emacs-lisp
+    (setq my-http-status "400")
+
+    (defun my-body ()
+      "return plain text body"
+      "some body")
+
+    (my-body)
+  #+end_src
+
+
+* POST with body
+  POST https://httpbin.org/post
+  - Accept: application/json
+  - Content-Type: application/json
+  #+begin_src json
+    {
+      "data": {
+        "title": "Hello",
+        "hello": "world"
+      }
+    }
+  #+end_src
+* No body
+  GET https://httpbin.org/get
+
+* Bad delete
+  DELETE https://httpbin.org/status/400
+
+* Embedded lisp variable
+  GET https://httpbin.org/status/`my-http-status`
+
+* Embedded lisp function
+  PUT https://httpbin.org/put
+  #+begin_src text
+    `(my-body)`
+  #+end_src
+
+* Request with callbacks
+  POST https://httpbin.org/post
+  #+begin_src json
+    {
+      "some": "body"
+    }
+  #+end_src
+  1. First callback
+     #+begin_src emacs-lisp
+       (lambda (status body)
+         (message "status %s, body %s" status body))
+     #+end_src
+  2. Second callback
+     #+begin_src emacs-lisp
+       (lambda (status body)
+         (pp (assoc 'url (json-read-from-string body))))
+     #+end_src
+
+* Sample
+#+begin_src text
+  HTTP/1.1 200 OK
+  Access-Control-Allow-Credentials: true
+  Access-Control-Allow-Origin: *
+  Content-Type: application/json
+  Date: Wed, 04 Sep 2019 18:19:45 GMT
+  Referrer-Policy: no-referrer-when-downgrade
+  Server: nginx
+  X-Content-Type-Options: nosniff
+  X-Frame-Options: DENY
+  X-XSS-Protection: 1; mode=block
+  Content-Length: 200
+  Connection: keep-alive
+
+  {
+    "args": {},
+    "headers": {
+      "Accept": "*/*",
+      "Host": "httpbin.org",
+      "User-Agent": "curl/7.54.0"
+    },
+    "origin": "3.93.254.153, 3.93.254.153",
+    "url": "https://httpbin.org/get"
+  }
+#+end_src
