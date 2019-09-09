@@ -55,40 +55,22 @@
          (pp (assoc 'url (json-read-from-string body))))
      #+end_src
 
-* Sample
-#+begin_src text
-  HTTP/1.1 200 OK
-  Access-Control-Allow-Credentials: true
-  Access-Control-Allow-Origin: *
-  Content-Type: application/json
-  Date: Wed, 04 Sep 2019 18:19:45 GMT
-  Referrer-Policy: no-referrer-when-downgrade
-  Server: nginx
-  X-Content-Type-Options: nosniff
-  X-Frame-Options: DENY
-  X-XSS-Protection: 1; mode=block
-  Content-Length: 200
-  Connection: keep-alive
-
-  {
-    "args": {},
-    "headers": {
-      "Accept": "*/*",
-      "Host": "httpbin.org",
-      "User-Agent": "curl/7.54.0"
-    },
-    "origin": "3.93.254.153, 3.93.254.153",
-    "url": "https://httpbin.org/get"
-  }
-#+end_src
-
-(mapc (lambda (x) (assoc :begin (cdr x)))
-  (assoc :begin (cdr ))
-)
-
-(org-element-property :begin (cdr (cdr (cdr (org-element-parse-buffer 'headline)))))
-
-
-(org-element-map (org-element-parse-buffer) 'headline
-  (lambda (item) (org-element-property :begin item))
-  )
+* Request Title
+  GET/POST/PUT/... URL
+  - Header1: value
+  - Header2: value
+  #+begin_src
+    {
+      "body": "in any mode/format"
+    }
+  #+end_src
+  1. First Callback
+     #+begin_src emacs-lisp
+       (lambda (status headers body)
+         (message "status %s, headers %s, body %s" status headers body))
+     #+end_src
+  2. Second Callback
+     #+begin_src emacs-lisp
+       (lambda (status headers body)
+         (message "Second callback"))
+     #+end_src
