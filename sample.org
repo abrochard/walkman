@@ -81,3 +81,14 @@
     "url": "https://httpbin.org/get"
   }
 #+end_src
+
+(mapc (lambda (x) (assoc :begin (cdr x)))
+  (assoc :begin (cdr ))
+)
+
+(org-element-property :begin (cdr (cdr (cdr (org-element-parse-buffer 'headline)))))
+
+
+(org-element-map (org-element-parse-buffer) 'headline
+  (lambda (item) (org-element-property :begin item))
+  )

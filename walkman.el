@@ -166,6 +166,14 @@ NO-CALLBACKS disables callbacks."
       (dolist (fct (cdr (assoc :callbacks req)))
         (funcall (car (read-from-string fct)) code headers body)))))
 
+(defun walkman-execute-buffer ()
+  "Execute all requests in a buffer."
+  (interactive)
+  (org-element-map (org-element-parse-buffer) 'headline
+    (lambda (hl)
+      (goto-char (org-element-property :begin hl))
+      (walkman-at-point))))
+
 (define-transient-command walkman-transient ()
   "Walkman Menu"
   ["Arguments"
