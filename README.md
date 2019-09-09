@@ -1,6 +1,6 @@
 # Walkman
 
-Write HTTP requests in Org mode and replay them at will.
+Write HTTP requests in Org mode and replay them at will using cURL
 
 ## Features
   * write HTTP requests as org mode "walkman entries"
