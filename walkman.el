@@ -139,6 +139,31 @@ ARGS is the arg list."
               (cons :headers headers) (cons :body body)
               (cons :callbacks callbacks))))))
 
+(defun walkman-curl-to-org (cmd)
+  "Hacky function to import a curl command to org walkman entry.
+
+CMD is the curl command string."
+  (interactive "MCurl: ")
+  (insert (with-temp-buffer
+            (insert cmd)
+            (setq output "* Import Curl\n")
+            (goto-char (point-min))
+            (re-search-forward "-X \\([^ ]+\\)")
+            (if (match-string 1)
+                (setq output (format "%s  %s " output (upcase (match-string 1))))
+              (setq output (format "%s GET " output)))
+            (goto-char (point-min))
+            (re-search-forward "\\(https?://[^ ]+\\)")
+            (setq output (concat output (match-string 1) "\n"))
+            (goto-char (point-min))
+            (while (re-search-forward "-H '\\([^']+\\)" (point-max) t)
+              (setq output (format "%s  - %s\n" output (match-string 1))))
+            (goto-char (point-min))
+            (re-search-forward "-d '\\([^\000]*\\)??'")
+            (if (match-string 1)
+                (setq output (format "%s  #+begin_src json\n%s\n  #+end_src" output (match-string 1))))
+            output)))
+
 (defun walkman-copy-as-curl ()
   "Copy current org request as curl request."
   (interactive)

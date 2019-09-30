@@ -22,6 +22,7 @@
       }
     }
   #+end_src
+
 * No body
   GET https://httpbin.org/get
 

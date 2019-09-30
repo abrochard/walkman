@@ -105,3 +105,4 @@ and run
   * execute all requests sequentially
   * unit tests
   * import curl command
+  * option to run async
