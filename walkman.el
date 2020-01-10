@@ -12,19 +12,23 @@
 
 (defconst walkman--verb-regexp "\\(POST\\|GET\\|PUT\\|DELETE\\)")
 
-(defun walkman--exec (args)
+(defun walkman--exec (args &optional keep-headers)
   "Exec the request.
 
-ARGS is the curl args."
+ARGS is the curl args.
+KEEP-HEADERS is a bool to tell wether or not to keep headers."
   (let ((buffer "*walkman*"))
     (when (get-buffer buffer)
       (kill-buffer buffer))
+    (message "args %s" args)
     (apply #'call-process "curl" nil buffer nil args)
     (pop-to-buffer buffer)
-    (walkman--parse-response)))
+    (walkman--parse-response keep-headers)))
 
-(defun walkman--parse-response ()
-  "Parse response buffer."
+(defun walkman--parse-response (&optional keep-headers)
+  "Parse response buffer.
+
+KEEP-HEADERS is a bool to tell wether or not to keep headers"
   (let ((code nil)
         (status nil)
         (headers nil))
@@ -36,7 +40,7 @@ ARGS is the curl args."
       (setq headers (walkman--parse-headers)))
     (re-search-backward "\n")
     (forward-char 2)
-    (unless walkman-keep-headers
+    (unless (or walkman-keep-headers keep-headers)
       (delete-region (point-min) (point)))
     (list (cons :code code) (cons :status status)
           (cons :headers headers)
@@ -49,15 +53,18 @@ ARGS is the curl args."
       (push (cons (match-string 1) (match-string 2)) headers))
     headers))
 
-(defun walkman--to-args (args)
+(defun walkman--to-args (args &optional insecure)
   "Parse into curl args.
 
-ARGS is the arg list."
+ARGS is the arg list.
+INSECURE is optional flag to make insecure request."
   (let ((verb (cdr (assoc :verb args)))
         (host (cdr (assoc :host args)))
         (headers (cdr (assoc :headers args)))
         (body (cdr (assoc :body args))))
-    (append (list "--silent" "-i" "-X" verb host) headers (if body (list "-d" body) '()))))
+    (append (list "--silent" "-i" "-X" verb host) headers
+            (if insecure (list "-k") '())
+            (if body (list "-d" body) '()))))
 
 (defun walkman--eval-and-replace ()
   "Evaluate Lisp expression and replace with the result."
@@ -139,30 +146,62 @@ ARGS is the arg list."
               (cons :headers headers) (cons :body body)
               (cons :callbacks callbacks))))))
 
+(defun walkman--parse-curl (cmd)
+  "Parse a curl command and arguments into an a walkman request structure.
+
+CMD is the curl command string."
+  (let ((host "")
+        (headers '())
+        (body "")
+        (verb "GET"))
+    (with-temp-buffer
+      (insert cmd)
+      ;; get host
+      (goto-char (point-min))
+      (re-search-forward "'?\"?\\(https?://[^ '\"]+\\)'?\"?")
+      (setq host (match-string 1))
+      (replace-match "")
+
+      ;; get headers
+      (goto-char (point-min))
+      (while (re-search-forward "-H '\\([^']+\\)'" (point-max) t)
+        (push (match-string 1) headers)
+        (replace-match ""))
+
+      ;; get verb
+      (goto-char (point-min))
+      (re-search-forward "-X \\([^ ]+\\)" (point-max) t)
+      (unless (equal "" (match-string 1))
+        (setq verb (match-string 1))
+        (replace-match ""))
+
+      ;; get body
+      (goto-char (point-min))
+      (re-search-forward "-d '\\([^\000]*\\)??'" (point-max) t)
+      (unless (equal "" (match-string 1))
+        (setq body (match-string 1))
+        (replace-match "")))
+
+    (list (cons :host host) (cons :headers headers)
+          (cons :verb verb) (cons :body body))))
+
+(defun walkman--assemble-org (data)
+  "Build a walkman org entry from curl parsed data.
+
+DATA is the result of the walkman parse curl function."
+  (let ((output ""))
+    (setq output (format "* Import Curl\n  %s %s\n" (assoc-default :verb data) (assoc-default :host data)))
+    (setq output (concat output (mapconcat (lambda (x) (format "  - %s" x)) (assoc-default :headers data) "\n")))
+    (unless (equal "" (assoc-default :body data))
+      (setq output (format "%s\n#+begin_src json\n%s\n#+end_src" output (assoc-default :body data))))
+    output))
+
 (defun walkman-curl-to-org (cmd)
   "Hacky function to import a curl command to org walkman entry.
 
 CMD is the curl command string."
   (interactive "MCurl: ")
-  (insert (with-temp-buffer
-            (insert cmd)
-            (setq output "* Import Curl\n")
-            (goto-char (point-min))
-            (re-search-forward "-X \\([^ ]+\\)")
-            (if (match-string 1)
-                (setq output (format "%s  %s " output (upcase (match-string 1))))
-              (setq output (format "%s GET " output)))
-            (goto-char (point-min))
-            (re-search-forward "\\(https?://[^ ]+\\)")
-            (setq output (concat output (match-string 1) "\n"))
-            (goto-char (point-min))
-            (while (re-search-forward "-H '\\([^']+\\)" (point-max) t)
-              (setq output (format "%s  - %s\n" output (match-string 1))))
-            (goto-char (point-min))
-            (re-search-forward "-d '\\([^\000]*\\)??'")
-            (if (match-string 1)
-                (setq output (format "%s  #+begin_src json\n%s\n  #+end_src" output (match-string 1))))
-            output)))
+  (insert (walkman--assemble-org (walkman--parse-curl cmd))))
 
 (defun walkman-copy-as-curl ()
   "Copy current org request as curl request."
@@ -176,18 +215,21 @@ CMD is the curl command string."
                       (walkman--to-args (walkman--parse-request)) " ")))
   (message "Copied to kill ring"))
 
-(defun walkman-at-point (&optional no-callbacks)
+(defun walkman-at-point (&optional args)
   "Execute request at point.
 
-NO-CALLBACKS disables callbacks."
-  (interactive)
+ARGS is the arg list from transient."
+  (interactive
+   (list (transient-args 'walkman-transient)))
   (let* ((req (walkman--parse-request))
          (callbacks (assoc :callbacks req))
-         (res (walkman--exec (walkman--to-args req)))
+         (res (walkman--exec (walkman--to-args req (member "-k" args))
+                             (member "--verbose" args)))
          (code (cdr (assoc :code res)))
          (headers (cdr (assoc :headers res)))
          (body (cdr (assoc :body res))))
-    (unless no-callbacks
+    (message "Response status code: %s" code)
+    (unless (member "--skip" args)
       (dolist (fct (cdr (assoc :callbacks req)))
         (funcall (car (read-from-string fct)) code headers body)))))
 
@@ -203,10 +245,12 @@ NO-CALLBACKS disables callbacks."
   "Walkman Menu"
   ["Arguments"
    ("-k" "Insecure" "-k")
-   ("-s" "Skip callbacks" "--skip")]
+   ("-s" "Skip callbacks" "--skip")
+   ("-v" "Verbose response with headers" "--verbose")]
   ["Actions"
    ("x" "Execute" walkman-at-point)
-   ("c" "Copy as curl" walkman-copy-as-curl)])
+   ("c" "Copy as curl" walkman-copy-as-curl)
+   ("i" "Import curl command" walkman-curl-to-org)])
 
 (defvar walkman-mode-map
   (let ((map (make-sparse-keymap)))
