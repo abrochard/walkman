@@ -203,16 +203,19 @@ CMD is the curl command string."
   (interactive "MCurl: ")
   (insert (walkman--assemble-org (walkman--parse-curl cmd))))
 
-(defun walkman-copy-as-curl ()
-  "Copy current org request as curl request."
-  (interactive)
+(defun walkman-copy-as-curl (&optional args)
+  "Copy current org request as curl request.
+
+ARGS is the arg list from transient."
+  (interactive
+   (list (transient-args 'walkman-transient)))
   (kill-new
    (format "curl %s"
            (mapconcat (lambda (x)
                         (if (string-match "\n" x)
                             (format "'%s'" x)
                           x))
-                      (walkman--to-args (walkman--parse-request)) " ")))
+                      (walkman--to-args (walkman--parse-request) (member "-k" args)) " ")))
   (message "Copied to kill ring"))
 
 (defun walkman-at-point (&optional args)
