@@ -162,24 +162,26 @@ CMD is the curl command string."
       (setq host (match-string 1))
       (replace-match "")
 
-      ;; get headers
-      (goto-char (point-min))
-      (while (re-search-forward "-H '\\([^']+\\)'" (point-max) t)
-        (push (match-string 1) headers)
+      ;; get headers backwards to preserve the insertion order
+      (goto-char (point-max))
+      (while (re-search-backward
+              "\\(--header\\|-H\\) ['\"]\\([^'\"]+\\)['\"]"
+              (point-min) t)
+        (push (match-string 2) headers)
         (replace-match ""))
 
       ;; get verb
       (goto-char (point-min))
-      (re-search-forward "-X \\([^ ]+\\)" (point-max) t)
-      (unless (equal "" (match-string 1))
-        (setq verb (match-string 1))
+      (re-search-forward "\\(-X\\|--request\\) \\([^ ]+\\)" (point-max) t)
+      (unless (equal "" (match-string 2))
+        (setq verb (match-string 2))
         (replace-match ""))
 
       ;; get body
       (goto-char (point-min))
-      (re-search-forward "-d '\\([^\000]*\\)??'" (point-max) t)
-      (unless (equal "" (match-string 1))
-        (setq body (match-string 1))
+      (re-search-forward "\\(-d\\|--data-raw\\) '\\([^\000]*\\)??'" (point-max) t)
+      (unless (equal "" (match-string 2))
+        (setq body (match-string 2))
         (replace-match "")))
 
     (list (cons :host host) (cons :headers headers)
