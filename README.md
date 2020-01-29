@@ -20,6 +20,8 @@ By default, after calling  `M-x walkman-mode`, these bindings will be added to o
 ```
 C-c C-RETURN   to execute the enry at point
 C-c C-'        for the walkman menu
+C-c C-' c      to copy the entry at point as a curl command
+C-c C-' i      to import a curl command and insert as walkman entry
 ```
 
 ## How to write a walkman entry
