@@ -23,7 +23,7 @@ C-c C-'        for the walkman menu
 ```
 
 ## How to write a walkman entry
-See the `sample.org` file for example of walkman entries.
+See the [sample.org](sample.org) file for example of walkman entries.
 
 The general structure is
 ```org
