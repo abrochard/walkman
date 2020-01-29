@@ -34,7 +34,7 @@ KEEP-HEADERS is a bool to tell wether or not to keep headers"
         (headers nil))
     (save-excursion
       (goto-char (point-min))
-      (re-search-forward "^HTTP/[0-9]\\.[0-9] \\([0-9]\\{3\\}\\) \\([A-Z ]+\\)")
+      (re-search-forward "^HTTP/[0-9]\\.?[0-9]? \\([0-9]\\{3\\}\\) \\([A-Z ]+\\)?")
       (setq code (string-to-number (match-string 1)))
       (setq status (match-string 2))
       (setq headers (walkman--parse-headers)))
