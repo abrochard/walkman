@@ -1,6 +1,43 @@
-;;; package --- Summary
+;;; walkman.el --- Write HTTP requests in Org mode -*- lexical-binding: t; -*-
+
+;; Copyright (C) 2020, Adrien Brochard
+
+;; This file is NOT part of Emacs.
+
+;; This  program is  free  software; you  can  redistribute it  and/or
+;; modify it  under the  terms of  the GNU  General Public  License as
+;; published by the Free Software  Foundation; either version 2 of the
+;; License, or (at your option) any later version.
+
+;; This program is distributed in the hope that it will be useful, but
+;; WITHOUT  ANY  WARRANTY;  without   even  the  implied  warranty  of
+;; MERCHANTABILITY or FITNESS  FOR A PARTICULAR PURPOSE.   See the GNU
+;; General Public License for more details.
+
+;; You should have  received a copy of the GNU  General Public License
+;; along  with  this program;  if  not,  write  to the  Free  Software
+;; Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA 02111-1307
+;; USA
+
+;; Version: 1.0
+;; Author: Adrien Brochard
+;; Keywords: walkman http curl org comm
+;; URL: https://github.com/abrochard/walkman
+;; License: GNU General Public License >= 3
+;; Package-Requires: ((transient "0.1.0") (org "8.3.5") (emacs "25.3"))
 
 ;;; Commentary:
+
+;; Write HTTP requests in Org mode and replay them at will using cURL
+
+;;; Setup:
+
+;; M-x walkman-mode to add the default bindings to org-mode
+
+;;; Usage:
+
+;; C-c C-RETURN   to execute the entry at point
+;; C-c C-'        for the menu
 
 ;;; Code:
 
@@ -235,7 +272,7 @@ ARGS is the arg list from transient."
          (body (cdr (assoc :body res))))
     (message "Response status code: %s" code)
     (unless (member "--skip" args)
-      (dolist (fct (cdr (assoc :callbacks req)))
+      (dolist (fct (cdr callbacks))
         (funcall (car (read-from-string fct)) code headers body)))))
 
 (defun walkman-execute-buffer ()
@@ -257,6 +294,7 @@ ARGS is the arg list from transient."
    ("c" "Copy as curl" walkman-copy-as-curl)
    ("i" "Import curl command" walkman-curl-to-org)])
 
+;;;###autoload
 (defun walkman-mode ()
   "Add the walkman bindings to org mode map."
   (interactive)

@@ -18,7 +18,7 @@ Load up the `walkman.el` file.
 ## Usage
 By default, after calling  `M-x walkman-mode`, these bindings will be added to org-mode:
 ```
-C-c C-RETURN   to execute the enry at point
+C-c C-RETURN   to execute the entry at point
 C-c C-'        for the walkman menu
 C-c C-' c      to copy the entry at point as a curl command
 C-c C-' i      to import a curl command and insert as walkman entry
