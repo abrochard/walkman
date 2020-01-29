@@ -2,7 +2,7 @@
 
 Write HTTP requests in Org mode and replay them at will using cURL
 
-[walkman demo gif][walkman.gif]
+![walkman demo gif](walkman.gif)
 
 ## Features
   * write HTTP requests as org mode "walkman entries"
