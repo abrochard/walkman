@@ -257,17 +257,12 @@ ARGS is the arg list from transient."
    ("c" "Copy as curl" walkman-copy-as-curl)
    ("i" "Import curl command" walkman-curl-to-org)])
 
-(defvar walkman-mode-map
-  (let ((map (make-sparse-keymap)))
-    (define-key map (kbd "C-c C-'") 'walkman-transient)
-    (define-key map (kbd "C-c <C-return>") 'walkman-at-point)
-    map))
-
-(define-minor-mode walkman-mode
-  "Walkman mode"
-  :lighter " Walkman"
-  :group 'walkman
-  :init-value t)
+(defun walkman-mode ()
+  "Add the walkman bindings to org mode map."
+  (interactive)
+  (define-key org-mode-map (kbd "C-c C-'") #'walkman-transient)
+  (define-key org-mode-map (kbd "C-c <C-return>") #'walkman-at-point)
+  (message "Activated walkman"))
 
 (provide 'walkman)
 ;;; walkman.el ends here
