@@ -107,3 +107,7 @@ and run
   * import curl command
   * option to run async
   * multiple backends
+
+## Similar projects
+  * [restclient](https://github.com/pashky/restclient.el)
+  * [verb](https://github.com/federicotdn/verb)
