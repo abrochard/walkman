@@ -129,7 +129,7 @@ INSECURE is optional flag to make insecure request."
     (goto-char (point-min))
     (let ((headers '()))
       (while (re-search-forward "^ *- \\(.+:.+\\)$" (point-max) t)
-        (push (match-string 1) headers)
+        (push (format "'%s'" (match-string 1)) headers)
         (push "-H" headers))
       headers)))
 
