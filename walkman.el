@@ -129,13 +129,17 @@ INSECURE is optional flag to make insecure request."
     (re-search-forward (format "^ *%s \\(.*\\)$" walkman--verb-regexp))
     (match-string 2)))
 
-(defun walkman--extract-headers ()
-  "Extract HTTP headers."
+(defun walkman--extract-headers (&optional with-quote)
+  "Extract HTTP headers.
+
+WITH-QUOTE indicates that header values need to be quoted."
   (save-excursion
     (goto-char (point-min))
     (let ((headers '()))
       (while (re-search-forward "^ *- \\(.+:.+\\)$" (point-max) t)
-        (push (format "'%s'" (match-string 1)) headers)
+        (if with-quote
+            (push (format "'%s'" (match-string 1)) headers)
+          (push (match-string 1) headers))
         (push "-H" headers))
       headers)))
 
@@ -173,15 +177,17 @@ INSECURE is optional flag to make insecure request."
       (buffer-substring (org-element-property :contents-begin el)
                         (org-element-property :contents-end el)))))
 
-(defun walkman--parse-request ()
-  "Parse current org request."
+(defun walkman--parse-request (&optional with-quote)
+  "Parse current org request.
+
+WITH-QUOTE indicates that header values need to be quoted."
   (let ((raw (walkman--current)))
     (with-temp-buffer
       (insert raw)
       (walkman--eval-and-replace)
       (let ((verb (walkman--extract-verb))
             (host (walkman--extract-host))
-            (headers (walkman--extract-headers))
+            (headers (walkman--extract-headers with-quote))
             (body (walkman--extract-body))
             (callbacks (walkman--extract-callbacks)))
         (list (cons :verb verb) (cons :host host)
@@ -259,7 +265,7 @@ ARGS is the arg list from transient."
                         (if (string-match "\n" x)
                             (format "'%s'" x)
                           x))
-                      (walkman--to-args (walkman--parse-request) (member "-k" args)) " ")))
+                      (walkman--to-args (walkman--parse-request t) (member "-k" args)) " ")))
   (message "Copied to kill ring"))
 
 (defun walkman-at-point (&optional args)
