@@ -68,26 +68,32 @@ KEEP-HEADERS is a bool to tell wether or not to keep headers"
   (let ((code nil)
         (status nil)
         (headers nil))
+    (goto-char (point-min))
+    ;; clean up the buffer
     (save-excursion
-      (goto-char (point-min))
+      (while (search-forward "" (point-max) t)
+        (replace-match "")))
+    (let ((headers-end (save-excursion (re-search-forward "^$"))))
       (re-search-forward "^HTTP/[0-9]\\.?[0-9]? \\([0-9]\\{3\\}\\) \\([A-Z ]+\\)?")
       (setq code (string-to-number (match-string 1)))
       (setq status (match-string 2))
-      (setq headers (walkman--parse-headers)))
-    (re-search-backward "\n")
-    (forward-char 2)
-    (unless (or walkman-keep-headers keep-headers)
-      (delete-region (point-min) (point)))
-    (list (cons :code code) (cons :status status)
-          (cons :headers headers)
-          (cons :body (buffer-substring-no-properties (point) (point-max))))))
+      (setq headers (walkman--parse-headers headers-end))
+      (goto-char headers-end)
+      (forward-char 1)
+      (unless (or walkman-keep-headers keep-headers)
+        (delete-region (point-min) (point)))
+      (list (cons :code code) (cons :status status)
+            (cons :headers headers)
+            (cons :body (buffer-substring-no-properties (point) (point-max)))))))
 
-(defun walkman--parse-headers ()
-  "Parse headers into list."
+(defun walkman--parse-headers (headers-end)
+  "Parse headers into list.
+
+HEADERS-END is the end of headers point."
   (let ((headers '()))
-    (while (re-search-forward "^\\(.*\\): \\(.*\\)$" (point-max) t)
+    (while (re-search-forward "^\\(.*\\): \\(.*\\)$" headers-end t)
       (push (cons (match-string 1) (match-string 2)) headers))
-    headers))
+    (reverse headers)))
 
 (defun walkman--to-args (args &optional insecure)
   "Parse into curl args.
