@@ -1,0 +1,12 @@
+* POST with body
+  POST https://httpbin.org/post
+  - Accept: application/json
+  - Content-Type: application/json
+  #+begin_src json
+    {
+      "data": {
+        "title": "Hello",
+        "hello": "world"
+      }
+    }
+  #+end_src
