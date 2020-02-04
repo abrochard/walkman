@@ -126,8 +126,7 @@
       (with-temp-buffer
         (insert (assoc-default :input test))
         (walkman--eval-and-replace)
-        (should (equal (assoc-default :output test) (buffer-string))))))
-  )
+        (should (equal (assoc-default :output test) (buffer-string)))))))
 
 
 ;; (ert "walkman--test-.*")
