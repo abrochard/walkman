@@ -113,7 +113,8 @@ INSECURE is optional flag to make insecure request."
   (save-excursion
     (goto-char (point-min))
     (while (re-search-forward "`\\(.*\\)`" nil t)
-      (replace-match (eval (car (read-from-string (match-string 1))))))))
+      (replace-match
+       (format "%s" (eval (car (read-from-string (match-string 1)))))))))
 
 (defun walkman--extract-verb ()
   "Extract HTTP verb."
