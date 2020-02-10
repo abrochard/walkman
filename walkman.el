@@ -32,7 +32,13 @@
 
 ;;; Setup:
 
-;; M-x walkman-mode to add the default bindings to org-mode
+;; To use this package, add following code to your init file.
+
+;;   (with-eval-after-load 'org
+;;     (require 'walkman)
+;;     (walkman-setup))
+
+;; Or M-x walkman-setup to add the default bindings to org-mode
 
 ;;; Usage:
 
@@ -305,7 +311,7 @@ ARGS is the arg list from transient."
    ("i" "Import curl command" walkman-curl-to-org)])
 
 ;;;###autoload
-(defun walkman-mode ()
+(defun walkman-setup ()
   "Add the walkman bindings to org mode map."
   (interactive)
   (define-key org-mode-map (kbd "C-c C-'") #'walkman-transient)
