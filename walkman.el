@@ -91,7 +91,7 @@ HEADERS-END is the end of headers point."
   (let ((headers '()))
     (while (re-search-forward "^\\(.*\\): \\(.*\\)$" headers-end t)
       (push (cons (match-string 1) (match-string 2)) headers))
-    (reverse headers)))
+    (nreverse headers)))
 
 (defun walkman--to-args (args &optional insecure)
   "Parse into curl args.
@@ -166,7 +166,7 @@ WITH-QUOTE indicates that header values need to be quoted."
               "[0-9]+\..*\n[ \t]*#\\+begin_src emacs-lisp\n\\([^\000]*?\n\\)??[ \t]*#\\+end_src"
               (point-max) t)
         (push (match-string-no-properties 1) callbacks))
-      (reverse callbacks))))
+      (nreverse callbacks))))
 
 (defun walkman--current ()
   "Extract current org request."
