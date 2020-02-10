@@ -65,7 +65,7 @@ KEEP-HEADERS is a bool to tell wether or not to keep headers."
   "Parse response buffer.
 
 KEEP-HEADERS is a bool to tell wether or not to keep headers"
-  (progn
+  (save-excursion
     (goto-char (point-min))
     ;; clean up the buffer
     (save-excursion
