@@ -228,7 +228,7 @@ CMD is the curl command string."
 
       ;; get body
       (goto-char (point-min))
-      (re-search-forward "\\(-d\\|--data-raw\\) '\\([^\000]*\\)??'" (point-max) t)
+      (re-search-forward "\\(-d\\|--data-raw\\|--data-binary\\) '\\([^\000]*\\)??'" (point-max) t)
       (unless (equal "" (match-string 2))
         (setq body (match-string 2))
         (replace-match "")))
