@@ -32,7 +32,13 @@
 
 ;;; Setup:
 
-;; M-x walkman-mode to add the default bindings to org-mode
+;; To use this package, add following code to your init file.
+
+;;   (with-eval-after-load 'org
+;;     (require 'walkman)
+;;     (walkman-setup))
+
+;; Or M-x walkman-setup to add the default bindings to org-mode
 
 ;;; Usage:
 
@@ -65,9 +71,7 @@ KEEP-HEADERS is a bool to tell wether or not to keep headers."
   "Parse response buffer.
 
 KEEP-HEADERS is a bool to tell wether or not to keep headers"
-  (let ((code nil)
-        (status nil)
-        (headers nil))
+  (save-excursion
     (goto-char (point-min))
     ;; clean up the buffer
     (save-excursion
@@ -75,16 +79,16 @@ KEEP-HEADERS is a bool to tell wether or not to keep headers"
         (replace-match "")))
     (let ((headers-end (save-excursion (re-search-forward "^$"))))
       (re-search-forward "^HTTP/[0-9]\\.?[0-9]? \\([0-9]\\{3\\}\\) \\([A-Z ]+\\)?")
-      (setq code (string-to-number (match-string 1)))
-      (setq status (match-string 2))
-      (setq headers (walkman--parse-headers headers-end))
-      (goto-char headers-end)
-      (forward-char 1)
-      (unless (or walkman-keep-headers keep-headers)
-        (delete-region (point-min) (point)))
-      (list (cons :code code) (cons :status status)
-            (cons :headers headers)
-            (cons :body (buffer-substring-no-properties (point) (point-max)))))))
+      (let ((code (string-to-number (match-string 1)))
+            (status (match-string 2))
+            (headers (walkman--parse-headers headers-end)))
+        (goto-char headers-end)
+        (forward-char 1)
+        (unless (or walkman-keep-headers keep-headers)
+          (delete-region (point-min) (point)))
+        (list (cons :code code) (cons :status status)
+              (cons :headers headers)
+              (cons :body (buffer-substring-no-properties (point) (point-max))))))))
 
 (defun walkman--parse-headers (headers-end)
   "Parse headers into list.
@@ -93,7 +97,7 @@ HEADERS-END is the end of headers point."
   (let ((headers '()))
     (while (re-search-forward "^\\(.*\\): \\(.*\\)$" headers-end t)
       (push (cons (match-string 1) (match-string 2)) headers))
-    (reverse headers)))
+    (nreverse headers)))
 
 (defun walkman--to-args (args &optional insecure)
   "Parse into curl args.
@@ -168,7 +172,7 @@ WITH-QUOTE indicates that header values need to be quoted."
               "[0-9]+\..*\n[ \t]*#\\+begin_src emacs-lisp\n\\([^\000]*?\n\\)??[ \t]*#\\+end_src"
               (point-max) t)
         (push (match-string-no-properties 1) callbacks))
-      (reverse callbacks))))
+      (nreverse callbacks))))
 
 (defun walkman--current ()
   "Extract current org request."
@@ -307,7 +311,7 @@ ARGS is the arg list from transient."
    ("i" "Import curl command" walkman-curl-to-org)])
 
 ;;;###autoload
-(defun walkman-mode ()
+(defun walkman-setup ()
   "Add the walkman bindings to org mode map."
   (interactive)
   (define-key org-mode-map (kbd "C-c C-'") #'walkman-transient)
