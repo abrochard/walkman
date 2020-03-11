@@ -128,6 +128,27 @@
         (walkman--eval-and-replace)
         (should (equal (assoc-default :output test) (buffer-string)))))))
 
+(ert-deftest walkman--test-format-headers ()
+  (let ((tests '(
+                 ((:k . "Auth") (:v . "Bearer") (:q . nil) (:f . nil)
+                  (:output . "Auth: Bearer"))
+                 ((:k . "Auth") (:v . "Bearer") (:q . t) (:f . nil)
+                  (:output . "'Auth: Bearer'"))
+                 ((:k . "type") (:v . "document") (:q . nil) (:f . t)
+                  (:output . "type=document"))
+                 ((:k . "type") (:v . "document") (:q . t) (:f . t)
+                  (:output . "'type=document'"))
+                 ((:k . "file") (:v . "[[/home/user/sample_document.jpg]]") (:q . t) (:f . t)
+                  (:output . "'file=@/home/user/sample_document.jpg'"))
+                 )))
+    (dolist (test tests)
+      (should (equal (assoc-default :output test)
+                     (walkman--format-headers
+                      (assoc-default :k test)
+                      (assoc-default :v test)
+                      (assoc-default :q test)
+                      (assoc-default :f test)))))))
+
 
 ;; (ert "walkman--test-.*")
 

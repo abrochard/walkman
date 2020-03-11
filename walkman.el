@@ -134,18 +134,37 @@ INSECURE is optional flag to make insecure request."
     (re-search-forward (format "^ *%s \\(.*\\)$" walkman--verb-regexp))
     (match-string 2)))
 
+(defun walkman--format-headers (k v with-quote form)
+  "Format the headers with key K and value V.
+
+WITH-QUOTE indicates if this needs to be quoted.
+FORM indicates if this is a form -F header."
+  (let ((value
+         (if (string-match "\\[\\[\\([^\]]+\\)\\]\\]" v) ;; org file link
+             (concat "@" (replace-regexp-in-string "\\[\\|\\]" "" v))
+           v)))
+    (cond ((and with-quote form) (format "'%s=%s'" k value))
+          (with-quote (format "'%s: %s'" k value))
+          (form (format "%s=%s" k value))
+          (t (format "%s: %s" k value)))))
+
 (defun walkman--extract-headers (&optional with-quote)
   "Extract HTTP headers.
 
 WITH-QUOTE indicates that header values need to be quoted."
   (save-excursion
     (goto-char (point-min))
-    (let ((headers '()))
-      (while (re-search-forward "^ *- \\(.+:.+\\)$" (point-max) t)
-        (if with-quote
-            (push (format "'%s'" (match-string 1)) headers)
-          (push (match-string 1) headers))
-        (push "-H" headers))
+    (let ((headers '())
+          (form nil))
+      (while (re-search-forward "^[ \t]*\\(:form:\\|- \\([^:]+\\):[ \t]*\\(.+\\)\\)$" (point-max) t)
+        (if (equal (match-string-no-properties 1) ":form:")
+            (setq form t) ;; skip this line, we are now in form mode
+          (progn
+            (push (walkman--format-headers
+                   (match-string-no-properties 2)
+                   (match-string-no-properties 3)
+                   with-quote form) headers)
+            (push (if form "-F" "-H") headers))))
       headers)))
 
 (defun walkman--extract-body ()
