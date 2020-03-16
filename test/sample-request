@@ -1,7 +1,11 @@
-* POST with body
+* POST with body and multi part doc
   POST https://httpbin.org/post
   - Accept: application/json
   - Content-Type: application/json
+  :FORM:
+  - type: document
+  - file: [[/home/user/sample.jpg]]
+  :END:
   #+begin_src json
     {
       "data": {

@@ -98,7 +98,8 @@
                    (walkman--parse-request))))
     (should (equal request
                    '((:verb . "POST") (:host . "https://httpbin.org/post")
-                     (:headers . ("-H" "Content-Type: application/json" "-H" "Accept: application/json"))
+                     (:headers . ("-F" "file=@/home/user/sample.jpg" "-F" "type=document"
+                                  "-H" "Content-Type: application/json" "-H" "Accept: application/json"))
                      (:body . "    {
       \"data\": {
         \"title\": \"Hello\",
