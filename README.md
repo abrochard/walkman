@@ -35,6 +35,10 @@ The general structure is
   GET/POST/PUT/... URL
   - Header1: value
   - Header2: value
+  :FORM:
+  - type: document
+  - file: [[/home/user/document.jpg]]
+  :END:
   #+begin_src
     {
       "body": "in any mode/format"
@@ -74,6 +78,38 @@ Note that only the HTTP action and URL are required, everything else is up to yo
     }
   #+end_src
 ```
+
+### Multipart upload
+You can upload multipart document using the `:FORM:` Org drawer syntax:
+```org
+* Multi part
+  POST https://httpbin.org/post
+  - Accept: application/json
+  :FORM:
+  - type: document
+  - file: [[/home/username/sample_document.jpg]]
+  :END:
+```
+will result in
+```shell
+curl --silent -i -X POST https://httpbin.org/post -F 'file=@/home/username/sample_document.jpg' -F 'type=document' -H 'Accept: application/json'
+```
+Things to know:
+1. Headers inside the org drawer `:FORM:` will be set with the curl `-F` flag for form
+2. org links to file will get their path prefixed with a `@`
+3. `:FORM:` headers must be **AFTER** regular headers for the parser to work properly
+
+This is an example that **will not** work:
+```org
+* Wrong multi part
+  POST https://httpbin.org/post
+  :FORM:
+  - file: [[/home/username/sample_document.jpg]]
+  :END:
+  - Accept: application/json
+```
+because the `Accept` header will not be parsed correctly.
+
 
 ### Request with lisp variable
 Define `my-http-status` with

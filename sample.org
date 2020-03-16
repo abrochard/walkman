@@ -56,6 +56,14 @@
          (pp (assoc 'url (json-read-from-string body))))
      #+end_src
 
+* Multi part
+  POST https://httpbin.org/post
+  - Accept: application/json
+  :FORM:
+  - type: document
+  - file: [[/home/username/sample_document.jpg]]
+  :END:
+
 * Request Title
   GET/POST/PUT/... URL
   - Header1: value
