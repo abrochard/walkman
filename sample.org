@@ -59,10 +59,10 @@
 * Multi part
   POST https://httpbin.org/post
   - Accept: application/json
-  :form:
+  :FORM:
   - type: document
   - file: [[/home/username/sample_document.jpg]]
-  :end:
+  :END:
 
 * Request Title
   GET/POST/PUT/... URL

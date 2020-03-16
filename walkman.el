@@ -156,8 +156,8 @@ WITH-QUOTE indicates that header values need to be quoted."
     (goto-char (point-min))
     (let ((headers '())
           (form nil))
-      (while (re-search-forward "^[ \t]*\\(:form:\\|- \\([^:]+\\):[ \t]*\\(.+\\)\\)$" (point-max) t)
-        (if (equal (match-string-no-properties 1) ":form:")
+      (while (re-search-forward "^[ \t]*\\(:FORM:\\|- \\([^:]+\\):[ \t]*\\(.+\\)\\)$" (point-max) t)
+        (if (equal (match-string-no-properties 1) ":FORM:")
             (setq form t) ;; skip this line, we are now in form mode
           (progn
             (push (walkman--format-headers
