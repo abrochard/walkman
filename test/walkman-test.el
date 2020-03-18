@@ -122,11 +122,13 @@
                   (:output . "3"))
                  ((:input . "`(funcall (lambda () (- 500 100)))`")
                   (:output . "400"))
+                 ((:input . "`local-var`")
+                  (:output . "XXX"))
                  )))
     (dolist (test tests)
       (with-temp-buffer
         (insert (assoc-default :input test))
-        (walkman--eval-and-replace)
+        (walkman--eval-and-replace '((local-var . "XXX")))
         (should (equal (assoc-default :output test) (buffer-string)))))))
 
 (ert-deftest walkman--test-format-headers ()

@@ -112,13 +112,16 @@ INSECURE is optional flag to make insecure request."
             (if insecure (list "-k") '())
             (if body (list "-d" body) '()))))
 
-(defun walkman--eval-and-replace ()
-  "Evaluate Lisp expression and replace with the result."
+(defun walkman--eval-and-replace (local-variables)
+  "Evaluate Lisp expression and replace with the result.
+
+LOCAL-VARIABLES is the alist of local variables from original buffer."
   (save-excursion
     (goto-char (point-min))
     (while (re-search-forward "`\\(.*\\)`" nil t)
-      (replace-match
-       (format "%s" (eval (car (read-from-string (match-string 1)))))))))
+      (let* ((variable (car (read-from-string (match-string 1))))
+             (local-value (assoc-default variable local-variables)))
+        (replace-match (format "%s" (or local-value (eval variable))))))))
 
 (defun walkman--extract-verb ()
   "Extract HTTP verb."
@@ -205,10 +208,11 @@ WITH-QUOTE indicates that header values need to be quoted."
   "Parse current org request.
 
 WITH-QUOTE indicates that header values need to be quoted."
-  (let ((raw (walkman--current)))
+  (let ((raw (walkman--current))
+        (local-variables file-local-variables-alist))
     (with-temp-buffer
       (insert raw)
-      (walkman--eval-and-replace)
+      (walkman--eval-and-replace local-variables)
       (let ((verb (walkman--extract-verb))
             (host (walkman--extract-host))
             (headers (walkman--extract-headers with-quote))
