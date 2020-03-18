@@ -116,7 +116,7 @@ Define `my-http-status` with
 ```emacs-lisp
 (setq my-http-status "400")
 ```
-OR [speficy a file variable](https://www.gnu.org/software/emacs/manual/html_node/emacs/Specifying-File-Variables.html#Specifying-File-Variables)
+OR [specify a file variable](https://www.gnu.org/software/emacs/manual/html_node/emacs/Specifying-File-Variables.html#Specifying-File-Variables)
 and run
 ```org
 * Embedded lisp variable
