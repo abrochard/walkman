@@ -65,7 +65,8 @@ KEEP-HEADERS is a bool to tell wether or not to keep headers."
       (kill-buffer buffer))
     (apply #'call-process "curl" nil buffer nil args)
     (pop-to-buffer buffer)
-    (walkman--parse-response keep-headers)))
+    (walkman--parse-response keep-headers)
+    (view-mode)))
 
 (defun walkman--parse-response (&optional keep-headers)
   "Parse response buffer.
