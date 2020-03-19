@@ -60,13 +60,15 @@
 
 ARGS is the curl args.
 KEEP-HEADERS is a bool to tell wether or not to keep headers."
-  (let ((buffer "*walkman*"))
+  (let ((buffer "*walkman*")
+        (response '()))
     (when (get-buffer buffer)
       (kill-buffer buffer))
     (apply #'call-process "curl" nil buffer nil args)
     (pop-to-buffer buffer)
-    (walkman--parse-response keep-headers)
-    (view-mode)))
+    (setq response (walkman--parse-response keep-headers))
+    (view-mode)
+    response))
 
 (defun walkman--parse-response (&optional keep-headers)
   "Parse response buffer.
