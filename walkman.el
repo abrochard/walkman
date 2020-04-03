@@ -50,10 +50,19 @@
 (require 'org)
 (require 'org-element)
 (require 'transient)
+(require 'cl-lib)
 
 (defvar walkman-keep-headers nil)
 
 (defconst walkman--verb-regexp "\\(POST\\|GET\\|PUT\\|DELETE\\)")
+
+(cl-defstruct (walkman-request (:constructor walkman-request--create)
+                               (:copier nil))
+  url method headers form-headers body callbacks)
+
+(cl-defstruct (walkman-response (:constructor walkman-response--create)
+                                (:copier nil))
+  code status headers body)
 
 (defun walkman--exec (args &optional keep-headers)
   "Exec the request.
@@ -89,9 +98,9 @@ KEEP-HEADERS is a bool to tell wether or not to keep headers"
         (forward-char 1)
         (unless (or walkman-keep-headers keep-headers)
           (delete-region (point-min) (point)))
-        (list (cons :code code) (cons :status status)
-              (cons :headers headers)
-              (cons :body (buffer-substring-no-properties (point) (point-max))))))))
+        (walkman-response--create
+         :code code :status status :headers headers
+         :body (buffer-substring-no-properties (point) (point-max)))))))
 
 (defun walkman--parse-headers (headers-end)
   "Parse headers into list.
@@ -102,18 +111,28 @@ HEADERS-END is the end of headers point."
       (push (cons (match-string 1) (match-string 2)) headers))
     (nreverse headers)))
 
-(defun walkman--to-args (args &optional insecure)
+(defun walkman--prefix-list (prefix list quoted)
+  "Prefix every element of the LIST with another PREFIX element.
+
+QUOTED indicated if the elements of the list need to be quoted."
+  (apply #'append (mapcar (lambda (x) (list prefix (if quoted (format "'%s'" x) x))) list)))
+
+(defun walkman--to-args (req &optional insecure quoted)
   "Parse into curl args.
 
-ARGS is the arg list.
-INSECURE is optional flag to make insecure request."
-  (let ((verb (cdr (assoc :verb args)))
-        (host (cdr (assoc :host args)))
-        (headers (cdr (assoc :headers args)))
-        (body (cdr (assoc :body args))))
-    (append (list "--silent" "-i" "-X" verb host) headers
-            (if insecure (list "-k") '())
-            (if body (list "-d" body) '()))))
+REQ is the walkman-request struct.
+INSECURE is optional flag to make insecure request.
+QUOTED is the optional flag to quote or not headers."
+  (let ((body (walkman-request-body req)))
+    (append (list "--silent" "-i" "-X"
+                  (walkman-request-method req)
+                  (walkman-request-url req))
+            (walkman--prefix-list "-H" (walkman-request-headers req) quoted)
+            (walkman--prefix-list "-F" (walkman-request-form-headers req) quoted)
+            (if insecure '("-k") '())
+            (if body
+                (walkman--prefix-list "-d" (list (walkman-request-body req)) quoted)
+              '()))))
 
 (defun walkman--eval-and-replace (local-variables)
   "Evaluate Lisp expression and replace with the result.
@@ -126,78 +145,69 @@ LOCAL-VARIABLES is the alist of local variables from original buffer."
              (local-value (assoc-default variable local-variables)))
         (replace-match (format "%s" (or local-value (eval variable))))))))
 
-(defun walkman--extract-verb ()
-  "Extract HTTP verb."
-  (save-excursion
-    (goto-char (point-min))
-    (re-search-forward walkman--verb-regexp)
-    (match-string 1)))
+(defun walkman--org-child (element n)
+  "Recursively get N times the first child of ELEMENT."
+  (if (equal 0 n)
+      element
+    (walkman--org-child (car (org-element-contents element)) (1- n))))
 
-(defun walkman--extract-host ()
-  "Extract HTTP host."
-  (save-excursion
-    (goto-char (point-min))
-    (re-search-forward (format "^ *%s \\(.*\\)$" walkman--verb-regexp))
-    (match-string 2)))
+(defun walkman--org-text (element)
+  "Extract the plain text string of ELEMENT."
+  (buffer-substring-no-properties (org-element-property :begin element)
+                                  (1- (org-element-property :end element))))
 
-(defun walkman--format-headers (k v with-quote form)
-  "Format the headers with key K and value V.
+(defun walkman--extract-url (elements)
+  "Extract the URL out of an org section parsed into org ELEMENTS."
+  (car (org-element-map (walkman--org-child elements 2) 'link
+         (lambda (link) (org-element-property :raw-link link)))))
 
-WITH-QUOTE indicates if this needs to be quoted.
-FORM indicates if this is a form -F header."
-  (let ((value
-         (if (string-match "\\[\\[\\([^\]]+\\)\\]\\]" v) ;; org file link
-             (concat "@" (replace-regexp-in-string "\\[\\|\\]" "" v))
-           v)))
-    (cond ((and with-quote form) (format "'%s=%s'" k value))
-          (with-quote (format "'%s: %s'" k value))
-          (form (format "%s=%s" k value))
-          (t (format "%s: %s" k value)))))
+(defun walkman--extract-method (elements)
+  "Extract the HTTP method out of an org section parsed into org ELEMENTS."
+  (let ((content (walkman--org-text (walkman--org-child elements 2))))
+    (when (string-match walkman--verb-regexp content)
+      (match-string-no-properties 1 content))))
 
-(defun walkman--extract-headers (&optional with-quote)
-  "Extract HTTP headers.
+(defun walkman--extract-headers (elements)
+  "Extract the HTTP headers out of an org section parsed into org ELEMENTS."
+  (car (org-element-map elements 'plain-list
+         (lambda (plain-list)
+           (when (and (eq 'section (org-element-type (org-element-property :parent plain-list)))
+                      (eq 'unordered (org-element-property :type plain-list)))
+             (org-element-map plain-list 'item
+               (lambda (item)
+                 (walkman--org-text (walkman--org-child item 1)))))))))
 
-WITH-QUOTE indicates that header values need to be quoted."
-  (save-excursion
-    (goto-char (point-min))
-    (let ((headers '())
-          (form nil))
-      (while (re-search-forward "^[ \t]*\\(:FORM:\\|- \\([^:]+\\):[ \t]*\\(.+\\)\\)$" (point-max) t)
-        (if (equal (match-string-no-properties 1) ":FORM:")
-            (setq form t) ;; skip this line, we are now in form mode
-          (progn
-            (push (walkman--format-headers
-                   (match-string-no-properties 2)
-                   (match-string-no-properties 3)
-                   with-quote form) headers)
-            (push (if form "-F" "-H") headers))))
-      headers)))
+(defun walkman--extract-form-headers (elements)
+  "Extract the form headers out of an org section parsed into org ELEMENTS."
+  (car (org-element-map elements 'drawer
+         (lambda (drawer)
+           (when (equal "FORM" (org-element-property :drawer-name drawer))
+             (org-element-map drawer 'item
+               (lambda (item)
+                 (let ((link (car (org-element-map item 'link 'identity)))
+                       (item (car (org-element-contents item))))
+                   (replace-regexp-in-string
+                    ": *" "="
+                    (if link
+                        (concat (buffer-substring-no-properties (org-element-property :begin item)
+                                                                (org-element-property :begin link))
+                                "@" (org-element-property :path link))
+                      (walkman--org-text item)))))))))))
 
-(defun walkman--extract-body ()
-  "Extract body."
-  (save-excursion
-    (goto-char (point-min))
-    (re-search-forward (concat
-                        ;; (1) indentation                 (2) lang
-                        "^\\([ \t]*\\)#\\+begin_src[ \t]+\\([^ \f\t\n\r\v]+\\)[ \t]*"
-                        ;; (3) switches
-                        "\\([^\":\n]*\"[^\"\n*]*\"[^\":\n]*\\|[^\":\n]*\\)"
-                        ;; (4) header arguments
-                        "\\([^\n]*\\)\n"
-                        ;; (5) body
-                        "\\([^\000]*?\n\\)??[ \t]*#\\+end_src") nil t)
-    (match-string 5)))
+(defun walkman--extract-body (elements)
+  "Extract the body out of an org section parsed into org ELEMENTS."
+  (car (org-element-map elements 'src-block
+         (lambda (src-block)
+           (when (eq 'section (org-element-type (org-element-property :parent src-block)))
+             (org-remove-indentation (org-element-property :value src-block)))))))
 
-(defun walkman--extract-callbacks ()
-  "Extract callbacks."
-  (save-excursion
-    (goto-char (point-min))
-    (let ((callbacks '()))
-      (while (re-search-forward
-              "[0-9]+\..*\n[ \t]*#\\+begin_src emacs-lisp\n\\([^\000]*?\n\\)??[ \t]*#\\+end_src"
-              (point-max) t)
-        (push (match-string-no-properties 1) callbacks))
-      (nreverse callbacks))))
+
+(defun walkman--extract-callbacks (elements)
+  "Extract the callbacks out of an org section parsed into org ELEMENTS."
+  (org-element-map elements 'src-block
+    (lambda (src-block)
+      (when (eq 'ordered (org-element-property :type (org-element-property :parent (org-element-property :parent src-block))))
+        (org-remove-indentation (org-element-property :value src-block))))))
 
 (defun walkman--current ()
   "Extract current org request."
@@ -207,38 +217,35 @@ WITH-QUOTE indicates that header values need to be quoted."
       (buffer-substring (org-element-property :contents-begin el)
                         (org-element-property :contents-end el)))))
 
-(defun walkman--parse-request (&optional with-quote)
-  "Parse current org request.
-
-WITH-QUOTE indicates that header values need to be quoted."
+(defun walkman--parse-request ()
+  "Parse current org request."
   (let ((raw (walkman--current))
         (local-variables file-local-variables-alist))
     (with-temp-buffer
       (insert raw)
       (walkman--eval-and-replace local-variables)
-      (let ((verb (walkman--extract-verb))
-            (host (walkman--extract-host))
-            (headers (walkman--extract-headers with-quote))
-            (body (walkman--extract-body))
-            (callbacks (walkman--extract-callbacks)))
-        (list (cons :verb verb) (cons :host host)
-              (cons :headers headers) (cons :body body)
-              (cons :callbacks callbacks))))))
+      (let ((elements (org-element-parse-buffer)))
+        (walkman-request--create :url (walkman--extract-url elements)
+                                 :method (walkman--extract-method elements)
+                                 :headers (walkman--extract-headers elements)
+                                 :form-headers (walkman--extract-form-headers elements)
+                                 :body (walkman--extract-body elements)
+                                 :callbacks (walkman--extract-callbacks elements))))))
 
 (defun walkman--parse-curl (cmd)
   "Parse a curl command and arguments into an a walkman request structure.
 
 CMD is the curl command string."
-  (let ((host "")
+  (let ((url "")
         (headers '())
         (body "")
-        (verb "GET"))
+        (method "GET"))
     (with-temp-buffer
       (insert cmd)
-      ;; get host
+      ;; get url
       (goto-char (point-min))
       (re-search-forward "'?\"?\\(https?://[^ '\"]+\\)'?\"?")
-      (setq host (match-string 1))
+      (setq url (match-string 1))
       (replace-match "")
 
       ;; get headers backwards to preserve the insertion order
@@ -249,11 +256,11 @@ CMD is the curl command string."
         (push (match-string 2) headers)
         (replace-match ""))
 
-      ;; get verb
+      ;; get method
       (goto-char (point-min))
       (re-search-forward "\\(-X\\|--request\\) \\([^ ]+\\)" (point-max) t)
       (unless (equal "" (match-string 2))
-        (setq verb (match-string 2))
+        (setq method (match-string 2))
         (replace-match ""))
 
       ;; get body
@@ -263,18 +270,18 @@ CMD is the curl command string."
         (setq body (match-string 2))
         (replace-match "")))
 
-    (list (cons :host host) (cons :headers headers)
-          (cons :verb verb) (cons :body body))))
+    (walkman-request--create :url url :method method :headers headers :body body)))
 
-(defun walkman--assemble-org (data)
-  "Build a walkman org entry from curl parsed data.
+(defun walkman--assemble-org (request)
+  "Build a walkman org entry from curl parsed request.
 
-DATA is the result of the walkman parse curl function."
-  (let ((output ""))
-    (setq output (format "* Import Curl\n  %s %s\n" (assoc-default :verb data) (assoc-default :host data)))
-    (setq output (concat output (mapconcat (lambda (x) (format "  - %s" x)) (assoc-default :headers data) "\n")))
-    (unless (equal "" (assoc-default :body data))
-      (setq output (format "%s\n#+begin_src json\n%s\n#+end_src" output (assoc-default :body data))))
+REQUEST is a walkman-request struct, result of the walkman parse curl function."
+  (let ((output "")
+        (body (walkman-request-body request)))
+    (setq output (format "* Import Curl\n  %s %s\n" (walkman-request-method request) (walkman-request-url request)))
+    (setq output (concat output (mapconcat (lambda (x) (format "  - %s" x)) (walkman-request-headers request) "\n")))
+    (unless (equal "" body)
+      (setq output (format "%s\n#+begin_src json\n%s\n#+end_src" output body)))
     output))
 
 (defun walkman-curl-to-org (cmd)
@@ -284,19 +291,20 @@ CMD is the curl command string."
   (interactive "MCurl: ")
   (insert (walkman--assemble-org (walkman--parse-curl cmd))))
 
+(defun walkman--assemble-curl (insecure)
+  "Assemble curl command.
+
+INSECURE is the flag to add a -k to the command."
+  (format "curl %s"
+          (mapconcat #'identity (walkman--to-args (walkman--parse-request) insecure t) " ")))
+
 (defun walkman-copy-as-curl (&optional args)
   "Copy current org request as curl request.
 
 ARGS is the arg list from transient."
   (interactive
    (list (transient-args 'walkman-transient)))
-  (kill-new
-   (format "curl %s"
-           (mapconcat (lambda (x)
-                        (if (string-match "\n" x)
-                            (format "'%s'" x)
-                          x))
-                      (walkman--to-args (walkman--parse-request t) (member "-k" args)) " ")))
+  (kill-new (walkman--assemble-curl (member "-k" args)))
   (message "Copied to kill ring"))
 
 (defun walkman-at-point (&optional args)
@@ -306,12 +314,12 @@ ARGS is the arg list from transient."
   (interactive
    (list (transient-args 'walkman-transient)))
   (let* ((req (walkman--parse-request))
-         (callbacks (assoc :callbacks req))
+         (callbacks (walkman-request-callbacks req))
          (res (walkman--exec (walkman--to-args req (member "-k" args))
                              (member "--verbose" args)))
-         (code (cdr (assoc :code res)))
-         (headers (cdr (assoc :headers res)))
-         (body (cdr (assoc :body res))))
+         (code (walkman-response-code res))
+         (headers (walkman-response-headers res))
+         (body (walkman-response-body res)))
     (message "Response status code: %s" code)
     (unless (member "--skip" args)
       (dolist (fct (cdr callbacks))
