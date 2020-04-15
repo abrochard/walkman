@@ -18,7 +18,7 @@ Write HTTP requests in Org mode and replay them at will using cURL
 Load up the `walkman.el` file.
 
 ## Usage
-By default, after calling  `M-x walkman-mode`, these bindings will be added to org-mode:
+By default, after calling  `M-x walkman-setup`, these bindings will be added to org-mode:
 ```
 C-c C-RETURN   to execute the entry at point
 C-c C-'        for the walkman menu
@@ -155,13 +155,13 @@ If you don't want to bother with the `-v` flag to keep the headers in the respon
 
 ### Custom key bindings
 
-By default, running `walkman-mode` will run
+By default, running `walkman-setup` will run
 ```
 (define-key org-mode-map (kbd "C-c C-'") #'walkman-transient)
 (define-key org-mode-map (kbd "C-c <C-return>") #'walkman-at-point)
 ```
 
-If you want to setup your own binding, don't run `walkman-mode` and instead bind
+If you want to setup your own binding, don't run `walkman-setup` and instead bind
   * `walkman-at-point` for quick execution under the cursor
   * `walkman-transient` for the transient-based interactive menu
 
