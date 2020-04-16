@@ -1,4 +1,4 @@
-# -*- my-http-status: 400; -*-
+# -*- my-http-status: 400; base-url: "https://httpbin.org" -*-
 
 * Custom function for later
   #+begin_src emacs-lisp
@@ -29,6 +29,8 @@
 
 * Embedded lisp variable
   GET https://httpbin.org/status/`my-http-status`
+* More than one embedded lisp variable
+  GET `base-url`/status/`my-http-status`
 
 * Embedded lisp function
   PUT https://httpbin.org/put

@@ -140,7 +140,7 @@ QUOTED is the optional flag to quote or not headers."
 LOCAL-VARIABLES is the alist of local variables from original buffer."
   (save-excursion
     (goto-char (point-min))
-    (while (re-search-forward "`\\(.*\\)`" nil t)
+    (while (re-search-forward "`\\(.*?\\)`" nil t)
       (let* ((variable (car (read-from-string (match-string 1))))
              (local-value (assoc-default variable local-variables)))
         (replace-match (format "%s" (or local-value (eval variable))))))))
