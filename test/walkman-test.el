@@ -58,7 +58,9 @@
     (funcall test "`(+ 1 2)`" '() "3")
     (funcall test "`(funcall (lambda () (- 500 100)))`" '() "400")
     (funcall test "`(version)`" '() (version))
-    (funcall test "(version)" '() "(version)")))
+    (funcall test "(version)" '() "(version)")
+    ;; should handle multiple replacements in the same string
+    (funcall test "`emacs-version`-`emacs-version`" '() (format "%s-%s" emacs-version emacs-version))))
 
 (ert-deftest walkman--test-parse-request ()
   (let ((request (with-temp-buffer
