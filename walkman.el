@@ -98,6 +98,12 @@ KEEP-HEADERS is a bool to tell wether or not to keep headers"
         (forward-char 1)
         (unless (or walkman-keep-headers keep-headers)
           (delete-region (point-min) (point)))
+        (dolist (header headers)
+          (if (and (string= "content-type" (car header))
+                   (string-prefix-p "application/json" (cdr header)))
+              (progn
+                (json-pretty-print (point) (point-max))
+                (json-mode))))
         (walkman-response--create
          :code code :status status :headers headers
          :body (buffer-substring-no-properties (point) (point-max)))))))
