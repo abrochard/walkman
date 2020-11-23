@@ -28,7 +28,7 @@
     \"Accept\": \"*/*\",
     \"Content-Length\": \"87\",
     \"Host\": \"httpbin.org\",
-    \"User-Agent\": \"curl/7.54.0\",
+    \"User-Agent\": \"curl/7.54.0\"
   },
   \"json\": null,
   \"origin\": \"3.93.254.153\",
