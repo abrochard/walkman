@@ -5,6 +5,7 @@
 ;;; Code:
 
 (require 'ert)
+(require 'cl-macs)
 
 (ert-deftest walkman--test-parse-response ()
   (let ((response (with-temp-buffer
@@ -134,16 +135,17 @@
     (should (equal output (walkman--assemble-org input)))))
 
 (ert-deftest walkman--test-assemble-curl ()
-  (flet ((walkman--parse-request ()
-                                    (walkman-request--create :url "http://localhost/post"
-                                                             :method "POST" :body "some body")))
+  (cl-letf (((symbol-function 'walkman--parse-request)
+             (lambda ()
+               (walkman-request--create :url "http://localhost/post"
+                                        :method "POST" :body "some body"))))
     (should (equal "curl --silent -i -X POST http://localhost/post -d 'some body'"
-                   (walkman--assemble-curl nil)))
-    ))
+                   (walkman--assemble-curl nil)))))
 
 (ert-deftest walkman--test-at-point ()
-  (flet ((walkman--exec (args &optional keep-headers)
-                        (walkman-response--create :code 200 :status "OK" :headers '() :body "")))
+  (cl-letf (((symbol-function 'walkman--exec)
+             (lambda (args &optional keep-headers)
+               (walkman-response--create :code 200 :status "OK" :headers '() :body ""))))
     (with-temp-buffer
       (insert-file-contents "test/sample-request")
       (should (not (walkman-at-point))))))
