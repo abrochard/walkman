@@ -8,7 +8,7 @@
 
 (ert-deftest walkman--test-parse-response ()
   (let ((response (with-temp-buffer
-                    (insert-file-contents "sample-response")
+                    (insert-file-contents "test/sample-response")
                     (walkman--parse-response))))
     (should (equal (walkman-response-code response) 200))
     (should (equal (walkman-response-status response) "OK"))
@@ -64,7 +64,7 @@
 
 (ert-deftest walkman--test-parse-request ()
   (let ((request (with-temp-buffer
-                   (insert-file-contents "sample-request")
+                   (insert-file-contents "test/sample-request")
                    (walkman--parse-request))))
     (should (equal (walkman-request-method request) "POST"))
     (should (equal (walkman-request-url request) "https://httpbin.org/post"))
@@ -145,7 +145,7 @@
   (flet ((walkman--exec (args &optional keep-headers)
                         (walkman-response--create :code 200 :status "OK" :headers '() :body "")))
     (with-temp-buffer
-      (insert-file-contents "sample-request")
+      (insert-file-contents "test/sample-request")
       (should (not (walkman-at-point))))))
 
 ;; (ert "walkman--test-.*")
