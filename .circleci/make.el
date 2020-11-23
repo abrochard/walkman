@@ -1,7 +1,7 @@
 (require 'package)
 
 (defconst make-packages
-  '(org transient))
+  '(org transient json-mode))
 
 (defun make-init ()
   (add-to-list 'package-archives '("melpa" . "https://melpa.org/packages/") t)

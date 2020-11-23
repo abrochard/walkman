@@ -24,7 +24,7 @@
 ;; Keywords: walkman http curl org comm
 ;; URL: https://github.com/abrochard/walkman
 ;; License: GNU General Public License >= 3
-;; Package-Requires: ((transient "0.1.0") (org "8.3.5") (emacs "25.3"))
+;; Package-Requires: ((transient "0.1.0") (org "8.3.5") (json-mode "1.6.0") (emacs "25.3"))
 
 ;;; Commentary:
 
@@ -51,6 +51,8 @@
 (require 'org-element)
 (require 'transient)
 (require 'cl-lib)
+(require 'json)
+(require 'json-mode)
 
 (defvar walkman-keep-headers nil)
 
