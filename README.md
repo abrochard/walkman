@@ -1,4 +1,5 @@
 [![MELPA](https://melpa.org/packages/walkman-badge.svg)](https://melpa.org/#/walkman)
+[![abrochard](https://circleci.com/gh/abrochard/walkman.svg?style=svg)](https://app.circleci.com/pipelines/github/abrochard/walkman)
 
 # Walkman
 
