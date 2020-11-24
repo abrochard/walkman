@@ -20,6 +20,8 @@
                                                          ("server" . "gunicorn/19.9.0")
                                                          ("access-control-allow-origin" . "*")
                                                          ("access-control-allow-credentials" . "true"))))
+    (princ response)
+    (princ (walkman-response-body response))
     (should (equal (walkman-response-body response)
                    (with-temp-buffer
                      (insert "{
