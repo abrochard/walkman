@@ -5,10 +5,12 @@
 ;;; Code:
 
 (require 'ert)
+(require 'cl-macs)
+(require 'json)
 
 (ert-deftest walkman--test-parse-response ()
   (let ((response (with-temp-buffer
-                    (insert-file-contents "sample-response")
+                    (insert-file-contents "test/sample-response")
                     (walkman--parse-response))))
     (should (equal (walkman-response-code response) 200))
     (should (equal (walkman-response-status response) "OK"))
@@ -19,7 +21,8 @@
                                                          ("access-control-allow-origin" . "*")
                                                          ("access-control-allow-credentials" . "true"))))
     (should (equal (walkman-response-body response)
-                   "{
+                   (with-temp-buffer
+                     (insert "{
   \"args\": {},
   \"data\": \"\",
   \"files\": {},
@@ -27,13 +30,15 @@
     \"Accept\": \"*/*\",
     \"Content-Length\": \"87\",
     \"Host\": \"httpbin.org\",
-    \"User-Agent\": \"curl/7.54.0\",
+    \"User-Agent\": \"curl/7.54.0\"
   },
   \"json\": null,
   \"origin\": \"3.93.254.153\",
   \"url\": \"https://httpbin.org/post\"
 }
-"))))
+")
+                     (json-pretty-print-buffer)
+                     (buffer-string))))))
 
 (ert-deftest walkman--test-prefix-list ()
   (let ((l '("header1: value1" "header2: value2")))
@@ -64,7 +69,7 @@
 
 (ert-deftest walkman--test-parse-request ()
   (let ((request (with-temp-buffer
-                   (insert-file-contents "sample-request")
+                   (insert-file-contents "test/sample-request")
                    (walkman--parse-request))))
     (should (equal (walkman-request-method request) "POST"))
     (should (equal (walkman-request-url request) "https://httpbin.org/post"))
@@ -134,18 +139,19 @@
     (should (equal output (walkman--assemble-org input)))))
 
 (ert-deftest walkman--test-assemble-curl ()
-  (flet ((walkman--parse-request ()
-                                    (walkman-request--create :url "http://localhost/post"
-                                                             :method "POST" :body "some body")))
+  (cl-letf (((symbol-function 'walkman--parse-request)
+             (lambda ()
+               (walkman-request--create :url "http://localhost/post"
+                                        :method "POST" :body "some body"))))
     (should (equal "curl --silent -i -X POST http://localhost/post -d 'some body'"
-                   (walkman--assemble-curl nil)))
-    ))
+                   (walkman--assemble-curl nil)))))
 
 (ert-deftest walkman--test-at-point ()
-  (flet ((walkman--exec (args &optional keep-headers)
-                        (walkman-response--create :code 200 :status "OK" :headers '() :body "")))
+  (cl-letf (((symbol-function 'walkman--exec)
+             (lambda (args &optional keep-headers)
+               (walkman-response--create :code 200 :status "OK" :headers '() :body ""))))
     (with-temp-buffer
-      (insert-file-contents "sample-request")
+      (insert-file-contents "test/sample-request")
       (should (not (walkman-at-point))))))
 
 ;; (ert "walkman--test-.*")

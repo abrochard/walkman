@@ -24,7 +24,7 @@
 ;; Keywords: walkman http curl org comm
 ;; URL: https://github.com/abrochard/walkman
 ;; License: GNU General Public License >= 3
-;; Package-Requires: ((transient "0.1.0") (org "8.3.5") (emacs "25.3"))
+;; Package-Requires: ((transient "0.1.0") (org "8.3.5") (json-mode "1.6.0") (emacs "26.3"))
 
 ;;; Commentary:
 
@@ -51,6 +51,8 @@
 (require 'org-element)
 (require 'transient)
 (require 'cl-lib)
+(require 'json)
+(require 'json-mode)
 
 (defvar walkman-keep-headers nil)
 
@@ -101,7 +103,7 @@ KEEP-HEADERS is a bool to tell wether or not to keep headers"
         (dolist (header headers)
           (if (and (string= "content-type" (car header))
                    (string-prefix-p "application/json" (cdr header)))
-              (progn
+              (save-excursion
                 (json-pretty-print (point) (point-max))
                 (json-mode))))
         (walkman-response--create

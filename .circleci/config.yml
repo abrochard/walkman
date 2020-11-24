@@ -1,0 +1,48 @@
+version: 2.1
+
+steps: &steps
+  working_directory: /walkman
+  steps:
+    - run: apt update && apt install -y git ssh make
+    - checkout
+    - run:
+        name: Install packages
+        command: |
+          emacs -Q --batch -l .circleci/make.el --funcall make-install-packages
+
+    - run:
+        name: ERT tests
+        command: |
+          emacs -Q --batch -l .circleci/make.el --funcall make-ert
+
+    - run:
+        name: Integration tests
+        command: |
+          emacs -Q --batch -l .circleci/make.el --funcall make-integration
+
+    - run:
+        name: Compile
+        command: |
+          emacs -Q --batch -l .circleci/make.el --funcall make-compile walkman.el
+
+    - run:
+        name: Lint
+        command: |
+          emacs -Q --batch -l .circleci/make.el --funcall make-lint walkman.el
+
+jobs:
+  emacs-27:
+    docker:
+      - image: silex/emacs:27.1
+    <<: *steps
+  emacs-26:
+    docker:
+      - image: silex/emacs:26.3
+    <<: *steps
+
+workflows:
+  version: 2
+  build:
+    jobs:
+      - emacs-26
+      - emacs-27
