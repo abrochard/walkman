@@ -103,7 +103,7 @@ KEEP-HEADERS is a bool to tell wether or not to keep headers"
         (dolist (header headers)
           (if (and (string= "content-type" (car header))
                    (string-prefix-p "application/json" (cdr header)))
-              (progn
+              (save-excursion
                 (json-pretty-print (point) (point-max))
                 (json-mode))))
         (walkman-response--create
