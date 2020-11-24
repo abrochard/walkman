@@ -6,6 +6,7 @@
 
 (require 'ert)
 (require 'cl-macs)
+(require 'json)
 
 (ert-deftest walkman--test-parse-response ()
   (let ((response (with-temp-buffer
@@ -20,7 +21,8 @@
                                                          ("access-control-allow-origin" . "*")
                                                          ("access-control-allow-credentials" . "true"))))
     (should (equal (walkman-response-body response)
-                   "{
+                   (with-temp-buffer
+                     (insert "{
   \"args\": {},
   \"data\": \"\",
   \"files\": {},
@@ -34,7 +36,9 @@
   \"origin\": \"3.93.254.153\",
   \"url\": \"https://httpbin.org/post\"
 }
-"))))
+")
+                     (json-pretty-print-buffer)
+                     (buffer-string))))))
 
 (ert-deftest walkman--test-prefix-list ()
   (let ((l '("header1: value1" "header2: value2")))
