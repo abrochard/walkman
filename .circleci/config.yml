@@ -16,6 +16,11 @@ steps: &steps
           emacs -Q --batch -l .circleci/make.el --funcall make-ert
 
     - run:
+        name: Integration tests
+        command: |
+          emacs -Q --batch -l .circleci/make.el --funcall make-integration
+
+    - run:
         name: Compile
         command: |
           emacs -Q --batch -l .circleci/make.el --funcall make-compile walkman.el

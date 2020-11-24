@@ -20,6 +20,12 @@
   (load-file "/walkman/test/walkman-test.el")
   (ert-run-tests-batch-and-exit))
 
+(defun make-integration ()
+  (make-init)
+  (load-file "/walkman/walkman.el")
+  (load-file "/walkman/test/walkman-integration.el")
+  (ert-run-tests-batch-and-exit))
+
 (defun make-compile ()
   (make-init)
   (setq byte-compile-error-on-warn nil)
