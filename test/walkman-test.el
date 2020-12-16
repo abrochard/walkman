@@ -153,7 +153,7 @@
              (lambda (args)
                (walkman-response--create :code 200 :status "OK" :headers '() :body ""))))
     (let ((response (with-temp-buffer
-                      (insert-file-contents "sample-request")
+                      (insert-file-contents "test/sample-request")
                       (walkman-at-point))))
       (should (equal (walkman-response-code response) 200))
       (should (equal (walkman-response-status response) "OK"))
