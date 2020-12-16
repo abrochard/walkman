@@ -23,9 +23,11 @@
     (should (equal (walkman-response-body response)
                    (with-temp-buffer
                      (insert "{
-  \"args\": {},
+  \"args\": {
+  },
   \"data\": \"\",
-  \"files\": {},
+  \"files\": {
+  },
   \"headers\": {
     \"Accept\": \"*/*\",
     \"Content-Length\": \"87\",
@@ -148,11 +150,15 @@
 
 (ert-deftest walkman--test-at-point ()
   (cl-letf (((symbol-function 'walkman--exec)
-             (lambda (args &optional keep-headers)
+             (lambda (args)
                (walkman-response--create :code 200 :status "OK" :headers '() :body ""))))
-    (with-temp-buffer
-      (insert-file-contents "test/sample-request")
-      (should (not (walkman-at-point))))))
+    (let ((response (with-temp-buffer
+                      (insert-file-contents "sample-request")
+                      (walkman-at-point))))
+      (should (equal (walkman-response-code response) 200))
+      (should (equal (walkman-response-status response) "OK"))
+      (should (equal (walkman-response-headers response) '()))
+      (should (equal (walkman-response-body response) "")))))
 
 ;; (ert "walkman--test-.*")
 

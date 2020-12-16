@@ -56,6 +56,10 @@
 
 (defvar walkman-keep-headers nil)
 
+(defvar walkman--tmp-keep-headers nil)
+(defvar walkman--tmp-callbacks nil)
+(defvar walkman--tmp-skip-callbacks nil)
+
 (defconst walkman--verb-regexp "\\(POST\\|GET\\|PUT\\|DELETE\\)")
 
 (cl-defstruct (walkman-request (:constructor walkman-request--create)
@@ -66,20 +70,32 @@
                                 (:copier nil))
   code status headers body)
 
-(defun walkman--exec (args &optional keep-headers)
+(defun walkman--exec (args)
   "Exec the request.
 
-ARGS is the curl args.
-KEEP-HEADERS is a bool to tell wether or not to keep headers."
-  (let ((buffer "*walkman*")
-        (response '()))
+ARGS is the curl args."
+  (let ((buffer "*walkman*"))
     (when (get-buffer buffer)
       (kill-buffer buffer))
-    (apply #'call-process "curl" nil buffer nil args)
-    (pop-to-buffer buffer)
-    (setq response (walkman--parse-response keep-headers))
-    (view-mode)
-    response))
+    (make-process :name "walkman-proc" :buffer buffer :command (push "curl" args) :sentinel #'walkman--curl-sentinel)))
+
+(defun walkman--curl-sentinel (proc _msg)
+  "Process entire output of the curl command."
+  (when (and (eq (process-status proc) 'exit)
+             (zerop (process-exit-status proc))
+             (buffer-live-p (process-buffer proc)))
+    (with-current-buffer (process-buffer proc)
+      (pop-to-buffer (current-buffer))
+      (setq response (walkman--parse-response walkman--tmp-keep-headers))
+      (view-mode)
+      (let* ((code (walkman-response-code response))
+             (headers (walkman-response-headers response))
+             (callbacks walkman--tmp-callbacks)
+             (body (walkman-response-body response)))
+        (message "Response status code: %s" code)
+        (unless walkman--tmp-skip-callbacks
+          (dolist (fct callbacks)
+            (funcall (car (read-from-string fct)) code headers body)))))))
 
 (defun walkman--parse-response (&optional keep-headers)
   "Parse response buffer.
@@ -89,7 +105,7 @@ KEEP-HEADERS is a bool to tell wether or not to keep headers"
     (goto-char (point-min))
     ;; clean up the buffer
     (save-excursion
-      (while (search-forward "" (point-max) t)
+      (while (search-forward-regexp "\\\\|\\\\[1m\\|\\\\[0m" (point-max) t)
         (replace-match "")))
     (let ((headers-end (save-excursion (re-search-forward "^$"))))
       (re-search-forward "^HTTP/[0-9]\\.?[0-9]? \\([0-9]\\{3\\}\\) \\([A-Z ]+\\)?")
@@ -322,16 +338,11 @@ ARGS is the arg list from transient."
   (interactive
    (list (transient-args 'walkman-transient)))
   (let* ((req (walkman--parse-request))
-         (callbacks (walkman-request-callbacks req))
-         (res (walkman--exec (walkman--to-args req (member "-k" args))
-                             (member "--verbose" args)))
-         (code (walkman-response-code res))
-         (headers (walkman-response-headers res))
-         (body (walkman-response-body res)))
-    (message "Response status code: %s" code)
-    (unless (member "--skip" args)
-      (dolist (fct (cdr callbacks))
-        (funcall (car (read-from-string fct)) code headers body)))))
+         (callbacks (walkman-request-callbacks req)))
+    (setq walkman--tmp-callbacks callbacks)
+    (setq walkman--tmp-skip-callbacks (member "--skip" args))
+    (setq walkman--tmp-keep-headers (member "--verbose" args))
+    (walkman--exec (walkman--to-args req))))
 
 (defun walkman-execute-buffer ()
   "Execute all requests in a buffer."
