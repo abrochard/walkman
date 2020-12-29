@@ -117,8 +117,8 @@ KEEP-HEADERS is a bool to tell wether or not to keep headers"
         (unless (or walkman-keep-headers keep-headers)
           (delete-region (point-min) (point)))
         (dolist (header headers)
-          (if (and (string= "content-type" (car header))
-                   (string-prefix-p "application/json" (cdr header)))
+          (if (and (string= "content-type" (downcase (car header)))
+                   (string-prefix-p "application/json" (cdr header) t))
               (save-excursion
                 (json-pretty-print (point) (point-max))
                 (json-mode))))
