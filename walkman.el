@@ -105,7 +105,8 @@ KEEP-HEADERS is a bool to tell wether or not to keep headers"
     (goto-char (point-min))
     ;; clean up the buffer
     (save-excursion
-      (while (search-forward-regexp "\\\\|\\\\[1m\\|\\\\[0m" (point-max) t)
+      (while (search-forward-regexp "\\
+\\|\\\\[1m\\|\\\\[0m" (point-max) t)
         (replace-match "")))
     (let ((headers-end (save-excursion (re-search-forward "^$"))))
       (re-search-forward "^HTTP/[0-9]\\.?[0-9]? \\([0-9]\\{3\\}\\) \\([A-Z ]+\\)?")
@@ -124,7 +125,7 @@ KEEP-HEADERS is a bool to tell wether or not to keep headers"
                 (json-mode))))
         (walkman-response--create
          :code code :status status :headers headers
-         :body (buffer-substring-no-properties (point) (point-max)))))))
+         :body (buffer-substring-no-properties (point) (point-max))))))
 
 (defun walkman--parse-headers (headers-end)
   "Parse headers into list.
