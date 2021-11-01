@@ -105,7 +105,8 @@ KEEP-HEADERS is a bool to tell wether or not to keep headers"
     (goto-char (point-min))
     ;; clean up the buffer
     (save-excursion
-      (while (search-forward-regexp "\\\\|\\\\[1m\\|\\\\[0m" (point-max) t)
+      (while (search-forward-regexp "\\
+\\|\\\\[1m\\|\\\\[0m" (point-max) t)
         (replace-match "")))
     (let ((headers-end (save-excursion (re-search-forward "^$"))))
       (re-search-forward "^HTTP/[0-9]\\.?[0-9]? \\([0-9]\\{3\\}\\) \\([A-Z ]+\\)?")
@@ -239,7 +240,7 @@ LOCAL-VARIABLES is the alist of local variables from original buffer."
     (org-back-to-heading)
     (let ((el (org-element-at-point)))
       (buffer-substring (org-element-property :contents-begin el)
-                        (org-element-property :contents-end el)))))
+                        (org-element-property :contents-end el))))
 
 (defun walkman--parse-request ()
   "Parse current org request."
