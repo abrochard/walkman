@@ -352,7 +352,7 @@ ARGS is the arg list from transient."
       (goto-char (org-element-property :begin hl))
       (walkman-at-point))))
 
-(define-transient-command walkman-transient ()
+(transient-define-prefix walkman-transient ()
   "Walkman Menu"
   ["Arguments"
    ("-k" "Insecure" "-k")
