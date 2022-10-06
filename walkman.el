@@ -211,12 +211,12 @@ LOCAL-VARIABLES is the alist of local variables from original buffer."
                  (let ((link (car (org-element-map item 'link 'identity)))
                        (item (car (org-element-contents item))))
                    (replace-regexp-in-string
-                    ": *" "="
+                    "\\(: \\).*\\'" "="
                     (if link
                         (concat (buffer-substring-no-properties (org-element-property :begin item)
                                                                 (org-element-property :begin link))
                                 "@" (org-element-property :path link))
-                      (walkman--org-text item)))))))))))
+                      (walkman--org-text item)) nil nil 1)))))))))
 
 (defun walkman--extract-body (elements)
   "Extract the body out of an org section parsed into org ELEMENTS."

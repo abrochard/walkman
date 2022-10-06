@@ -77,7 +77,7 @@
     (should (equal (walkman-request-url request) "https://httpbin.org/post"))
     (should (equal (walkman-request-headers request)
                    '("Accept: application/json" "Content-Type: application/json")))
-    (should (equal (walkman-request-form-headers request) '("type=document" "file=@/home/user/sample.jpg")))
+    (should (equal (walkman-request-form-headers request) '("type=document" "metadata={\"some\": \"json\"}" "file=@/home/user/sample.jpg")))
     (should (equal (walkman-request-body request) "{
   \"data\": {
     \"title\": \"Hello\",
