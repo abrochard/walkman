@@ -4,6 +4,7 @@
   - Content-Type: application/json
   :FORM:
   - type: document
+  - metadata: {"some": "json"}
   - file: [[/home/user/sample.jpg]]
   :END:
   #+begin_src json
