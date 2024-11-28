@@ -64,7 +64,7 @@
 
 (cl-defstruct (walkman-request (:constructor walkman-request--create)
                                (:copier nil))
-  url method headers form-headers body callbacks)
+  url method headers form-headers body callbacks other-args)
 
 (cl-defstruct (walkman-response (:constructor walkman-response--create)
                                 (:copier nil))
@@ -153,6 +153,7 @@ QUOTED is the optional flag to quote or not headers."
                   (walkman-request-url req))
             (walkman--prefix-list "-H" (walkman-request-headers req) quoted)
             (walkman--prefix-list "-F" (walkman-request-form-headers req) quoted)
+            (walkman-request-other-args req)
             (if insecure '("-k") '())
             (if body
                 (walkman--prefix-list "-d" (list (walkman-request-body req)) quoted)
@@ -190,6 +191,15 @@ LOCAL-VARIABLES is the alist of local variables from original buffer."
   (let ((content (walkman--org-text (walkman--org-child elements 2))))
     (when (string-match walkman--verb-regexp content)
       (match-string-no-properties 1 content))))
+
+(defun walkman--extract-other-args (elements)
+  "Extract possible args out of an org section parsed into org ELEMENTS."
+  (flatten-list
+   (mapcar (lambda (s)
+             (string-split (string-trim s) " "))
+           (seq-filter (lambda (line)
+                         (string-match "^ *--.*$" line))
+                       (string-lines (walkman--org-text elements))))))
 
 (defun walkman--extract-headers (elements)
   "Extract the HTTP headers out of an org section parsed into org ELEMENTS."
@@ -251,6 +261,7 @@ LOCAL-VARIABLES is the alist of local variables from original buffer."
       (let ((elements (org-element-parse-buffer)))
         (walkman-request--create :url (walkman--extract-url elements)
                                  :method (walkman--extract-method elements)
+                                 :other-args (walkman--extract-other-args elements)
                                  :headers (walkman--extract-headers elements)
                                  :form-headers (walkman--extract-form-headers elements)
                                  :body (walkman--extract-body elements)

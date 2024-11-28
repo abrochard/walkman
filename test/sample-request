@@ -2,6 +2,8 @@
   POST https://httpbin.org/post
   - Accept: application/json
   - Content-Type: application/json
+  --key /home/user/key.pem
+  --cert /home/user/cert.pem
   :FORM:
   - type: document
   - metadata: {"some": "json"}
