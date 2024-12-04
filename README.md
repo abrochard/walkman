@@ -34,6 +34,7 @@ The general structure is
 ```org
 * Request Title
   GET/POST/PUT/... URL
+  --curl-args value
   - Header1: value
   - Header2: value
   :FORM:
@@ -143,6 +144,14 @@ and run
        (lambda (status headers body)
          (pp (assoc 'url (json-read-from-string body))))
      #+end_src
+```
+
+### Request with optional curl args
+```org
+* Request with certs and key
+  GET https://httpbin.org/get
+  --key /users/foo/key.pem
+  --cert /users/foo/cert.pem
 ```
 
 ## Customization
