@@ -183,8 +183,12 @@ LOCAL-VARIABLES is the alist of local variables from original buffer."
 
 (defun walkman--extract-url (elements)
   "Extract the URL out of an org section parsed into org ELEMENTS."
-  (car (org-element-map (walkman--org-child elements 2) 'link
-         (lambda (link) (org-element-property :raw-link link)))))
+  (let ((child (walkman--org-child elements 2)))
+    (or (car (org-element-map child 'link
+               (lambda (link) (org-element-property :raw-link link))))
+        (let ((content (walkman--org-text child)))
+          (when (string-match (concat walkman--verb-regexp " +\\([^ \n]+\\)") content)
+            (match-string-no-properties 2 content))))))
 
 (defun walkman--extract-method (elements)
   "Extract the HTTP method out of an org section parsed into org ELEMENTS."
