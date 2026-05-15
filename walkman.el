@@ -246,10 +246,11 @@ LOCAL-VARIABLES is the alist of local variables from original buffer."
 (defun walkman--current ()
   "Extract current org request."
   (save-excursion
-    (org-back-to-heading)
-    (let ((el (org-element-at-point)))
-      (buffer-substring (org-element-property :contents-begin el)
-                        (org-element-property :contents-end el)))))
+    (org-back-to-heading t)
+    (forward-line 1)
+    (let ((begin (point))
+          (end (save-excursion (org-end-of-subtree t t) (point))))
+      (buffer-substring begin end))))
 
 (defun walkman--parse-request ()
   "Parse current org request."
